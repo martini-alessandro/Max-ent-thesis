@@ -58,11 +58,16 @@ def burgMethod(data, m, method = 'FPE'):
         P.append(P[i] * (1 - k ** 2))
         _f = f + k * b
         _b = b + k * f 
+    if method == 'CAT' or method == 'FPE' or method == 'OBD':  
         optimizer[i] = optimizeM(P, a_k[-1], len(data), i + 1, method)
     #selecting the minimum for the optimizer and recording its position 
-    if method == 'CAT': 
-        optimizer[0] = optimizer[1] + 1
-    op_index = optimizer.argmin() + 1 
+    # if method == 'CAT': 
+    #     optimizer[0] = optimizer[1] + 1
+        op_index = optimizer[1:].argmin() + 1 
+    elif isinstance(method, int):
+        op_index = method
+    else: 
+        raise ValueError('method selected is not allowable')
     return P[op_index], a_k[op_index]
 
 def spectrum(P, a_k, f, dt = 1, plot = True): 

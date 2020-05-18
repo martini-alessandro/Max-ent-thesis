@@ -41,8 +41,8 @@ def gauss_noise(cov):
 
 
 if __name__ == "__main__": 
-    ax = np.linspace(0,5,1000)
-    time = np.linspace(0,5, 1000)
+    ax = np.linspace(0,5,10000)
+    time = np.linspace(0,5, 10000)
     #n = np.real(np.fft.ifft(function(ax))).shape[0]
     #plt.plot(ax, spectrum(ax))
     #n = len(ax)
