@@ -10,6 +10,7 @@ import numpy as np
 import SolarSpotsAnalysis as ssa
 import matplotlib.pyplot as plt
 from Fit_datas import autocorrelation
+%autoreload 2
 
 def infereFuture(P, ak, datas, number_of_datas): 
     """
@@ -41,11 +42,10 @@ if __name__ == '__main__':
                         infer_datetime_format = True ) 
     datas.index = datas.index.to_period('m')
     new_datas = np.array(datas['Spots'][:2001])
-    P, a_k = ssa.burgMethod(new_datas, 200, 4)
+    P, a_k = ssa.burgMethod(new_datas, 200, 8)
     fut = infereFuture(P, a_k, new_datas, 2600)
-    error = np.sqrt(P)
-    plt.plot(np.array(datas['Spots'][2001:]), color = 'b', 
-             label = 'Observed', linestyle = 'dotted')
+    # plt.plot(np.array(datas['Spots'][2001:]), color = 'b', 
+    #          label = 'Observed', linestyle = 'dotted')
     plt.plot(fut, color = 'orange', label = 'estimated')
     plt.title('Max Ent estimate for future solar spots numbers')
     plt.xlabel('Time [Months]')

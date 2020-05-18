@@ -13,6 +13,7 @@ import scipy
 import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import acf
 
+
 class data:
     def __init__(self, x, y): 
         self.x = x 
@@ -31,6 +32,8 @@ def optimizeM(P, a_k, N, m, method):
         k = np.linspace(1, m, m)
         PW_k = N / (N - k) * P
         return 1 / (N * PW_k.sum())- (1 / PW_k[-1])
+    elif isinstance(method, int):
+        pass
     elif method == 'OBD': 
         P_m = P[-1]
         P = np.array(P[:-1])
@@ -58,11 +61,11 @@ def burgMethod(data, m, method = 'FPE'):
         P.append(P[i] * (1 - k ** 2))
         _f = f + k * b
         _b = b + k * f 
-    if method == 'CAT' or method == 'FPE' or method == 'OBD':  
         optimizer[i] = optimizeM(P, a_k[-1], len(data), i + 1, method)
     #selecting the minimum for the optimizer and recording its position 
     # if method == 'CAT': 
     #     optimizer[0] = optimizer[1] + 1
+    if method == 'CAT' or method == 'FPE' or method == 'OBD':  
         op_index = optimizer[1:].argmin() + 1 
     elif isinstance(method, int):
         op_index = method

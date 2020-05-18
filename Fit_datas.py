@@ -71,7 +71,7 @@ def metropolis(data, n_of_points):
     posterior = [] 
     N = 0
     acc = 0
-    print('m upd: ', sigma_m, 's upd: ', simga_s, 'h upd: ', sigma_h)
+    print('m upd: ', sigma_m, 's upd: ', sigma_s, 'h upd: ', sigma_h)
     print('h interval: ', h_min, h_max, 's invetval: ', s_min, s_max)
     for i in range(n_of_points):
         new_m = m #+ np.random.normal(0, sigma_m)

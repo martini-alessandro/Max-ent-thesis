@@ -10,6 +10,7 @@ import scipy.stats
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 import scipy.linalg 
+# %load_ext autoreload
 
 
 
