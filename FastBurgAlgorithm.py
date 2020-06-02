@@ -4,6 +4,12 @@ Created on Mon Jun  1 15:02:22 2020
 
 @author: Alessandro Martini
 """
+
+import pandas as pd 
+import numpy as np 
+import scipy.stats 
+
+
 def optimizeM(P, a_k, N, m, method): #removed noise
     if method == 'FPE':
         return P[-1] * (N + m + 1) / (N - m - 1)
@@ -41,32 +47,32 @@ def autocorrelation(x, norm = 'N'):
 def fastBurg(data, m, method = 'FPE'): 
     """Compute the fast Burg Algorithm """ 
     #initialize variables 
-        N = len(data)
-        c = autocorrelation(data, norm = None)[: m + 3]
-        P = [c[0] / N]
-        ak = [np.array([1])]
-        optimizers = []
-        g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-2]),
-                      2 * c[1]])
-        r = np.array(2 * c[1])
-        for i in range(m + 1):
-            k, new_a = updateCoefficients(ak[i], g)
-            ak.append(np.array(new_a))  
-            P.append(P[i] * (1 - k * k.conj()))
-            optimizers.append(optimizeM(P, ak[i], N, i + 1, method))
-            r = updateR(data, i + 2, c, r)
-            Dra = np.dot(constructDr(data, i), new_a)
-            g = updateG(g, k, r, new_a, Dra)
+    N = len(data)
+    c = autocorrelation(data, norm = None)[: m + 3]
+    P = [c[0] / N]
+    ak = [np.array([1])]
+    optimizers = []
+    g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-2]),
+                  2 * c[1]])
+    r = np.array(2 * c[1])
+    for i in range(m + 1):
+        k, new_a = updateCoefficients(ak[i], g)
+        ak.append(np.array(new_a))  
+        P.append(P[i] * (1 - k * k.conj()))
+        optimizers.append(optimizeM(P, ak[i], N, i + 1, method))
+        r = updateR(data, i + 2, c, r)
+        Dra = np.dot(constructDr(data, i), new_a)
+        g = updateG(g, k, r, new_a, Dra)
             
-        if method == 'CAT' or method == 'FPE' or method == 'OBD':  
-            op_index = optimizers[1:].argmin() + 1 
-        elif isinstance(method, int):
-        #raise error if method < M 
-            op_index = method
-        else: 
-            raise ValueError('method selected is not allowable')
+    if method == 'CAT' or method == 'FPE' or method == 'OBD':  
+        op_index = optimizers[1:].argmin() + 1 
+    elif isinstance(method, int):
+    #raise error if method < M 
+        op_index = method
+    else: 
+        raise ValueError('method selected is not allowable')
         
-        return P[op_index], ak[op_index]
+    return P[op_index], ak[op_index]
     
 def updateCoefficients(a, g):
     """Updates predictio coefficiente and compute reflection coefficient"""
@@ -84,8 +90,9 @@ def constructDr(data, i):
     
 def updateR(data, i, c, r):
     r_0 = np.array([2 * c[i]])
-    r_1 = r - data[: i - 1] * data[i - 1].conj()
-    r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i + 1]
+    r_1 = r - data[: i - 1] * data[i - 1].conj() #data[i -2] must be in the first interval
+    #len(data) makes sure that last term is always included. i always >= 2. data[len(data) - 2], for i = 0 in loop, is second last term, so we are calling it as it should, because python counts from 0 so, for a N-lenght array, N-1 is last term and N-2 is second last, and so on.....
+    r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i] 
     return np.concatenate((r_0, r_1 - r_2))
 
 def updateG(g, k, r, a, Dr):
@@ -93,3 +100,12 @@ def updateG(g, k, r, a, Dr):
     g2 = np.array([np.dot(r, a.conj())])
     print(g1, g2)
     return np.concatenate((g1, g2))
+
+if __name__ == '__main__': 
+    datas = pd.read_csv('zuerich-monthly-sunspot-numbers-.tsv', sep = '\t',
+                        index_col = 0, 
+                        header = None, 
+                        names = ['Spots'],
+                        parse_dates = True, 
+                        infer_datetime_format = True )[:1000] 
+    datas.index = datas.index.to_period('m')
