@@ -52,14 +52,14 @@ def fastBurg(data, m, method = 'FPE'):
     P = [c[0] / N]
     ak = [np.array([1])]
     optimizers = np.zeros(m + 1)
-    g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-2]),
+    g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-1]),
                   2 * c[1]])
     r = np.array(2 * c[1])
     for i in range(m + 1):
+        print(i / (m + 1))
         k, new_a = updateCoefficients(ak[i], g)
         ak.append(np.array(new_a))  
         P.append(P[i] * (1 - k * k.conj()))
-        print(i)
         optimizers[i] = optimizeM(P, ak[-1], N, i + 1, method)
         r = updateR(data, i + 2, c, r)
         #Update g
@@ -92,13 +92,14 @@ def updateR(data, i, c, r):
     r_1 = r - data[: i - 1] * data[i - 1].conj() #data[i -2] must be in the first interval
     #len(data) makes sure that last term is always included. i always >= 2. data[len(data) - 2], for i = 0 in loop, is second last term, so we are calling it as it should, because python counts from 0 so, for a N-lenght array, N-1 is last term and N-2 is second last, and so on.....
     r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i] 
+    # print(np.flip(data[len(data) - i + 1 : len(data)].conj()), data[len(data) - i] )
     return np.concatenate((r_0, r_1 - r_2))
 
 def constructDr(data, i):
     data1 = np.flip(data[ : i + 2])
     data2 = data[len(data) - i - 2 : len(data)] #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
-    #print('data1', data1)
-    #print('data2', data2)
+    # print('data1', data1)
+    # print('data2', data2)
     #print('return', - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2))
     return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
     
