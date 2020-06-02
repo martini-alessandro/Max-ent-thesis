@@ -51,7 +51,7 @@ def fastBurg(data, m, method = 'FPE'):
     c = autocorrelation(data, norm = None)[: m + 3]
     P = [c[0] / N]
     ak = [np.array([1])]
-    optimizers = []
+    optimizers = np.zeros(m + 1)
     g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-2]),
                   2 * c[1]])
     r = np.array(2 * c[1])
@@ -59,8 +59,13 @@ def fastBurg(data, m, method = 'FPE'):
         k, new_a = updateCoefficients(ak[i], g)
         ak.append(np.array(new_a))  
         P.append(P[i] * (1 - k * k.conj()))
-        optimizers.append(optimizeM(P, ak[i], N, i + 1, method))
+        print(i)
+        optimizers[i] = optimizeM(P, ak[-1], N, i + 1, method)
         r = updateR(data, i + 2, c, r)
+        #Update g
+        #Constructing g_i + 1, we have to call a_(1 + 1), so new_a.
+        #Dr only appears as ascalar
+        
         Dra = np.dot(constructDr(data, i), new_a)
         g = updateG(g, k, r, new_a, Dra)
             
@@ -81,24 +86,27 @@ def updateCoefficients(a, g):
     new_a = addZero +  k * np.flip(addZero.conj())
     return k, new_a
    
-
-def constructDr(data, i):
-    data1 = np.flip(data[ : i + 2])
-    data2 = data[len(data) - i - 1 : len(data)]
-    print('data1, 2', data1, data2)
-    return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
-    
 def updateR(data, i, c, r):
+    #index i is calld as "j + 2", so that we are always computing "r_{i} = r_{j + 2}" (j refers to fastBurg loop)
     r_0 = np.array([2 * c[i]])
     r_1 = r - data[: i - 1] * data[i - 1].conj() #data[i -2] must be in the first interval
     #len(data) makes sure that last term is always included. i always >= 2. data[len(data) - 2], for i = 0 in loop, is second last term, so we are calling it as it should, because python counts from 0 so, for a N-lenght array, N-1 is last term and N-2 is second last, and so on.....
     r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i] 
     return np.concatenate((r_0, r_1 - r_2))
 
+def constructDr(data, i):
+    data1 = np.flip(data[ : i + 2])
+    data2 = data[len(data) - i - 2 : len(data)] #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
+    #print('data1', data1)
+    #print('data2', data2)
+    #print('return', - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2))
+    return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
+    
+
 def updateG(g, k, r, a, Dr):
     g1 = g + k.conj() * np.flip(g.conj()) + Dr
     g2 = np.array([np.dot(r, a.conj())])
-    print(g1, g2)
+    #print(g1, g2)
     return np.concatenate((g1, g2))
 
 if __name__ == '__main__': 
@@ -107,5 +115,8 @@ if __name__ == '__main__':
                         header = None, 
                         names = ['Spots'],
                         parse_dates = True, 
-                        infer_datetime_format = True )[:1000] 
+                        infer_datetime_format = True )
     datas.index = datas.index.to_period('m')
+    datas = np.array(datas['Spots'])
+    N = len(datas)
+    M = int(2*N / np.log(2*N))
