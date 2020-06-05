@@ -61,6 +61,8 @@ def fastBurg(data, m, method = 'FPE'):
         ak.append(np.array(new_a))  
         P.append(P[i] * (1 - k * k.conj()))
         optimizers[i] = optimizeM(P, ak[-1], N, i + 1, method)
+        #we update r. at 0 order we defined r_1 and use it to compute r_2, so we
+        #call updateR with index i + 2.  
         r = updateR(data, i + 2, c, r)
         #Update g
         #Constructing g_i + 1, we have to call a_(1 + 1), so new_a.
@@ -88,19 +90,23 @@ def updateCoefficients(a, g):
    
 def updateR(data, i, c, r):
     #index i is calld as "j + 2", so that we are always computing "r_{i} = r_{j + 2}" (j refers to fastBurg loop)
+    #constructing r_i we use c[i]
     r_0 = np.array([2 * c[i]])
-    r_1 = r - data[: i - 1] * data[i - 1].conj() #data[i -2] must be in the first interval
-    #len(data) makes sure that last term is always included. i always >= 2. data[len(data) - 2], for i = 0 in loop, is second last term, so we are calling it as it should, because python counts from 0 so, for a N-lenght array, N-1 is last term and N-2 is second last, and so on.....
+    
+    #compute the 'second' element for r array. Constructing r_i, in the first term
+    #datas are going from data[0] data[i - 2] and multiplied by data[i - 1] 
+    r_1 = r - data[: i - 1] * data[i - 1].conj()
+    
+    #Here is last element. Datas array goes from data[N] to data N - (i - 1) and have to be flipped
     r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i] 
-    # print(np.flip(data[len(data) - i + 1 : len(data)].conj()), data[len(data) - i] )
+   
     return np.concatenate((r_0, r_1 - r_2))
 
 def constructDr(data, i):
+    #Dr is matrix constructed from data arrays
     data1 = np.flip(data[ : i + 2])
-    data2 = data[len(data) - i - 2 : len(data)] #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
-    # print('data1', data1)
-    # print('data2', data2)
-    #print('return', - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2))
+    #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
+    data2 = data[len(data) - i - 2 : len(data)] 
     return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
     
 
