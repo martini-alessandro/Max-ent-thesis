@@ -48,15 +48,16 @@ def fastBurg(data, m, method = 'FPE'):
     """Compute the fast Burg Algorithm """ 
     #initialize variables 
     N = len(data)
-    c = autocorrelation(data, norm = None)[: m + 3]
+    c = autocorrelation(data, norm = None)
     P = [c[0] / N]
     ak = [np.array([1])]
     optimizers = np.zeros(m + 1)
     g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-1]),
                   2 * c[1]])
     r = np.array(2 * c[1])
+    updctime = []
     for i in range(m + 1):
-        print(i / (m + 1))
+        #print(i / (m + 1))
         k, new_a = updateCoefficients(ak[i], g)
         ak.append(np.array(new_a))  
         P.append(P[i] * (1 - k * k.conj()))
@@ -67,9 +68,12 @@ def fastBurg(data, m, method = 'FPE'):
         #Update g
         #Constructing g_i + 1, we have to call a_(1 + 1), so new_a.
         #Dr only appears as ascalar
-        
-        Dra = np.dot(constructDr(data, i), new_a)
+        # print('construct Dr2: ')
+        # %timeit np.dot(constructDr2(data, i), new_a)
+        Dra = np.dot(constructDr(data, i), new_a) 
+
         g = updateG(g, k, r, new_a, Dra)
+
             
     if method == 'CAT' or method == 'FPE' or method == 'OBD':  
         op_index = optimizers[1:].argmin() + 1 
@@ -79,7 +83,7 @@ def fastBurg(data, m, method = 'FPE'):
     else: 
         raise ValueError('method selected is not allowable')
         
-    return P[op_index], ak[op_index]
+    #return P[op_index], ak[op_index]
     
 def updateCoefficients(a, g):
     """Updates predictio coefficiente and compute reflection coefficient"""
@@ -106,9 +110,17 @@ def constructDr(data, i):
     #Dr is matrix constructed from data arrays
     data1 = np.flip(data[ : i + 2])
     #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
-    data2 = data[len(data) - i - 2 : len(data)] 
+    data2 = data[len(data) - i - 2 : ] 
     return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
     
+def constructDr2(data, i):
+    data1 = np.flip(data[: i + 2])
+    d1 = np.dot(np.reshape(data1, (data1.size, 1)), \
+            np.reshape(data1.conj(), (1, data1.size)))
+    data2 = data[len(data) - i - 2 : ]
+    d2 = np.dot(np.reshape(data2.conj(), (data2.size, 1)), \
+                np.reshape(data2, (1, data2.size)))
+    return d2 - d1
 
 def updateG(g, k, r, a, Dr):
     g1 = g + k.conj() * np.flip(g.conj()) + Dr
