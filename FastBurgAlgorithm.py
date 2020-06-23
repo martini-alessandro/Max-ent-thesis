@@ -8,6 +8,7 @@ Created on Mon Jun  1 15:02:22 2020
 import pandas as pd 
 import numpy as np 
 import scipy.stats 
+import matplotlib.pyplot as plt
 
 
 def optimizeM(P, a_k, N, m, method): #removed noise
@@ -33,7 +34,7 @@ def optimizeM(P, a_k, N, m, method): #removed noise
         
 def autocorrelation(x, norm = 'N'):
     N = len(x)
-    X=np.fft.fft(x-x.mean())
+    X=np.fft.fft(x)
     # We take the real part just to convert the complex output of fft to a real numpy float. The imaginary part if already 0 when coming out of the fft.
     R = np.real(np.fft.ifft(X*X.conj()))
     # Divide by an additional factor of 1/N since we are taking two fft and one ifft without unitary normalization, see: https://docs.scipy.org/doc/numpy/reference/routines.fft.html#module-numpy.fft
@@ -48,17 +49,23 @@ def fastBurg(data, m, method = 'FPE'):
     """Compute the fast Burg Algorithm """ 
     #initialize variables 
     N = len(data)
-    c = autocorrelation(data, norm = None)
+    c = np.array([])
+    #c = autocorrelation(data, norm = None)
+    for j in range(m + 5):
+        c = np.append(c, np.dot(data[: N - j], data[j :]))
+        
     P = [c[0] / N]
     ak = [np.array([1])]
     optimizers = np.zeros(m + 1)
-    g = np.array([2 * c[0] - np.abs(data[0]) - np.abs(data[-1]),
+    g = np.array([2 * c[0] - np.abs(data[0]) ** 2 - np.abs(data[-1]) ** 2,
                   2 * c[1]])
     r = np.array(2 * c[1])
-    updctime = []
+    k_list = []
+    g_list = []
     for i in range(m + 1):
         #print(i / (m + 1))
         k, new_a = updateCoefficients(ak[i], g)
+        k_list.append(k)
         ak.append(np.array(new_a))  
         P.append(P[i] * (1 - k * k.conj()))
         optimizers[i] = optimizeM(P, ak[-1], N, i + 1, method)
@@ -70,9 +77,10 @@ def fastBurg(data, m, method = 'FPE'):
         #Dr only appears as ascalar
         # print('construct Dr2: ')
         # %timeit np.dot(constructDr2(data, i), new_a)
-        Dra = np.dot(constructDr(data, i), new_a) 
-
+        #Dra = np.dot(constructDr(data, i), new_a)
+        Dra = constructDr(data, i, new_a)
         g = updateG(g, k, r, new_a, Dra)
+        g_list.append(g)
 
             
     if method == 'CAT' or method == 'FPE' or method == 'OBD':  
@@ -82,14 +90,15 @@ def fastBurg(data, m, method = 'FPE'):
         op_index = method
     else: 
         raise ValueError('method selected is not allowable')
-        
-    #return P[op_index], ak[op_index]
     
+    return P[op_index], ak[op_index]
+    
+
 def updateCoefficients(a, g):
     """Updates predictio coefficiente and compute reflection coefficient"""
     addZero = np.concatenate((a, np.zeros(1)))
-    k = - np.dot(addZero.conj(), np.flip(g)) / np.dot(addZero, g)
-    new_a = addZero +  k * np.flip(addZero.conj())
+    k = - np.dot(addZero.conj(), g[::-1]) / np.dot(addZero, g)
+    new_a = addZero +  k * addZero.conj()[::-1]
     return k, new_a
    
 def updateR(data, i, c, r):
@@ -102,29 +111,23 @@ def updateR(data, i, c, r):
     r_1 = r - data[: i - 1] * data[i - 1].conj()
     
     #Here is last element. Datas array goes from data[N] to data N - (i - 1) and have to be flipped
-    r_2 = np.flip(data[len(data) - i + 1 : len(data)].conj()) * data[len(data) - i] 
+    r_2 = data[len(data) - i + 1 : ].conj()[::-1] * data[len(data) - i] 
    
     return np.concatenate((r_0, r_1 - r_2))
 
-def constructDr(data, i):
+def constructDr(data, i, a):
     #Dr is matrix constructed from data arrays
-    data1 = np.flip(data[ : i + 2])
+    data1 = data[ : i + 2]
+    data1 = data1[::-1]
     #from 'last - i, we are computing idex = (i + 2), and data has to be last - index = last - i - 2
     data2 = data[len(data) - i - 2 : ] 
-    return - np.outer(data1, data1.conj()) - np.outer(data2.conj(), data2)
-    
-def constructDr2(data, i):
-    data1 = np.flip(data[: i + 2])
-    d1 = np.dot(np.reshape(data1, (data1.size, 1)), \
-            np.reshape(data1.conj(), (1, data1.size)))
-    data2 = data[len(data) - i - 2 : ]
-    d2 = np.dot(np.reshape(data2.conj(), (data2.size, 1)), \
-                np.reshape(data2, (1, data2.size)))
-    return d2 - d1
+    return - data1 * (data1.conj() @ a) - data2.conj() * (data2 @ a)
+
+
 
 def updateG(g, k, r, a, Dr):
     g1 = g + k.conj() * np.flip(g.conj()) + Dr
-    g2 = np.array([np.dot(r, a.conj())])
+    g2 = np.array([np.dot(r.T, a.conj())])
     #print(g1, g2)
     return np.concatenate((g1, g2))
 
@@ -134,7 +137,7 @@ if __name__ == '__main__':
                         header = None, 
                         names = ['Spots'],
                         parse_dates = True, 
-                        infer_datetime_format = True )
+                        infer_datetime_format = True)
     datas.index = datas.index.to_period('m')
     datas = np.array(datas['Spots'])
     N = len(datas)
