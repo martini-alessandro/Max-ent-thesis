@@ -10,8 +10,8 @@ import sys
 def Fastburg(data, m, method = 'FPE', dr = 1):
     N = len(data)
     #Define autocorrelation
-    c = np.zeros(m + 5)
-    for j in range(m + 5):
+    c = np.zeros(m + 2)
+    for j in range(m + 1):
         c[j] = data[: N - j] @ data[j : ]
     #Initialize variables
     a = [np.array([1])]
@@ -19,7 +19,7 @@ def Fastburg(data, m, method = 'FPE', dr = 1):
     r = 2 * c[1]
     g = np.array([2 * c[0] - data[0] * data[0].conj() - data[-1] * data[-1].conj(),
                    r])
-    #List to save arrays
+    #Initialize lists to save arrays
     optimizer = np.zeros(m)
     ks = []
     gs = []
@@ -27,26 +27,25 @@ def Fastburg(data, m, method = 'FPE', dr = 1):
     rs = []
     #Loop for the FastBurg Algorithm
     for i in range(m):
-        #sys.stdout.write('\r%f Fast Burg: ' %(i / (m - 1)))
+        sys.stdout.write('\r%f Fast Burg: ' %(i / (m)))
         #Update prediction error filter and reflection error coefficient
         k, new_a = updateCoefficients(a[-1], g)
-        ks.append(k)
-        #Save prediction error filter and P values
-        a.append(new_a)
-        P.append(P[-1] * (1 - k * k.conj()))
-        #Update variables 
+        #Update variables. Check paper for indeces at j-th loop. 
         r = updateR(data, i, r, c[i + 2])
-        rs.append(r)
-        #Construct the array in two different, equivalent ways and compare them
+        #Construct the array in two different, equivalent ways. 
         if dr == 1: DrA = np.dot(constructDr(data, i, new_a, Drs), new_a) 
         if dr == 2: DrA = constructDr2(data, i, new_a, Drs)
-        #check if functions give same result
         #Update last coefficient
         g = updateG(g, k, r, new_a, DrA)
+        #Append values to respective lists
+        a.append(new_a)
+        P.append(P[-1] * (1 - k * k.conj()))
+        ks.append(k)
         gs.append(g)
+        rs.append(r)
+        #Compute optimizer value for chosen method
+        optimizer[i] = optimizeM(P, a[-1], len(data), i + 1, method)
     return P, a, ks, gs, Drs, rs
-        
-    
     
 def updateCoefficients(a, g):
     a = np.concatenate((a, np.zeros(1)))
@@ -86,4 +85,21 @@ def updateG(g, k, r, a, Dra):
     gUp = g + (k * g[::-1]).conj() + Dra
     gDown = np.array([r @ a.conj()])
     return np.concatenate((gUp, gDown))
+
+def optimizeM(P, a_k, N, m, method): #removed noise
+    if method == 'FPE':
+        #print('P: {} \n'.format(P[-1]))
+        return P[-1] * (N + m + 1) / (N - m - 1)
+    elif method == 'CAT': 
+        P = np.array(P[1:])
+        k = np.linspace(1, m, m)
+        PW_k = N / (N - k) * P
+        #print('P: {} \n value {}\n'.format(P[-1], PW_k[-1]))
+        return 1 / (N * PW_k.sum())- (1 / PW_k[-1])
+    elif method == 'OBD': 
+        P_m = P[-1]
+        P = np.array(P[:-1])
+        return (N - m - 2)*np.log(P_m) + m*np.log(N) + np.log(P).sum() + (a_k**2).sum()
+    elif isinstance(method, int):
+        pass
     

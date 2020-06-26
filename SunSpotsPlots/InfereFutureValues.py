@@ -25,13 +25,13 @@ def infereFuture(P, ak, datas, number_of_datas):
     points = np.array([])
     for i in range(number_of_datas):
         data = data[:len(weights)]
-        new_point = weights.T @ data + np.random.normal(0, np.sqrt(P))
+        new_point = weights.T @ data + np.random.normal(0, np.sqrt(P)) #second parameter is the std! 
         while new_point < 0:
             new_point = weights.T @ data + np.random.normal(0, np.sqrt(P))
         data = np.insert(data, 0, new_point)
         points = np.append(points, new_point)
-        datas = np.append(datas, new_point)
-    return points
+        # datas = np.append(datas, new_point)
+    return points 
 
 if __name__ == '__main__': 
     datas = pd.read_csv('zuerich-monthly-sunspot-numbers-.tsv', sep = '\t',
@@ -40,16 +40,30 @@ if __name__ == '__main__':
                         names = ['Spots'],
                         parse_dates = True, 
                         infer_datetime_format = True ) 
+    # datas['Spots'] -= datas['Spots'].mean() 
     datas.index = datas.index.to_period('m')
     new_datas = np.array(datas['Spots'][:2001])
-    P, a_k = ssa.burgMethod(new_datas, 200, 8)
-    fut = infereFuture(P, a_k, new_datas, 2600)
-    # plt.plot(np.array(datas['Spots'][2001:]), color = 'b', 
-    #          label = 'Observed', linestyle = 'dotted')
-    plt.plot(fut, color = 'orange', label = 'estimated')
+    M = int(2 * new_datas.shape[0] / np.log(2 * new_datas.shape[0]))
+    P, a_k = ssa.burgMethod(new_datas, M)
+   
+    plt.plot(np.array(datas['Spots'][2001:]), color = 'b', 
+              label = 'Observed', linestyle = 'dotted')
+    l = []
+    for i in range(100):
+        print(i)
+        fut = infereFuture(P, a_k, new_datas, 800)
+        l.append(fut)
+        #plt.plot(fut, lw = 0.5, alpha = .6)
+    l = np.array(l)
+    m, l5, l95 = np.percentile(l, [50, 5, 95], axis = 0)
+    ax = np.linspace(0, 800, 800)
+    plt.fill_between(ax, l5, l95, alpha = .5)
+    plt.plot(m, color = 'k')
     plt.title('Max Ent estimate for future solar spots numbers')
     plt.xlabel('Time [Months]')
     plt.ylabel('# Spots')
-    #plt.ylim(top = 220)
-    plt.legend(loc = 2)
+    plt.xlim(0, 800)
+    
+    
+    
  
