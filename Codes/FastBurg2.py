@@ -33,7 +33,7 @@ def Fastburg(data, m, method = 'FPE', dr = 1):
         #Update variables. Check paper for indeces at j-th loop. 
         r = updateR(data, i, r, c[i + 2])
         #Construct the array in two different, equivalent ways. 
-        if dr == 1: DrA = np.dot(constructDr(data, i, new_a, Drs), new_a) 
+        if dr == 1: DrA = np.dot(constructDr(data, i, new_a, Drs), new_a.conj()) 
         if dr == 2: DrA = constructDr2(data, i, new_a, Drs)
         #Update last coefficient
         g = updateG(g, k, r, new_a, DrA)
@@ -75,15 +75,15 @@ def constructDr2(data, i, a, Drs):
     N = len(data)
     data1 = data[ : i + 2][::-1]
     data2 = data[N - i - 2 :]
-    d1 = - data1 * (data1 @ a).conj() 
-    d2 = - data2.conj() * (data2 @ a.conj())
+    d1 = - data1 * np.dot(data1, a).conj() 
+    d2 = - data2.conj() * np.dot(data2, a.conj())
     Drs.append(d1 + d2)
-    return - data1 * (data1 @ a).conj() - data2.conj() * (data2 @ a.conj()) 
+    return d1 + d2 
     
     
 def updateG(g, k, r, a, Dra):
     gUp = g + (k * g[::-1]).conj() + Dra
-    gDown = np.array([r @ a.conj()])
+    gDown = np.array([np.dot(r ,a.conj())])
     return np.concatenate((gUp, gDown))
 
 def optimizeM(P, a_k, N, m, method): #removed noise
