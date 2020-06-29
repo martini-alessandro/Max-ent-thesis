@@ -6,7 +6,7 @@ Created on Wed Jun 24 16:41:00 2020
 """
 import ConstrucFreqNoise as fr 
 import SolarSpotsAnalysis as sa
-import Fb2 
+import FastBurg2 as Fb2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
