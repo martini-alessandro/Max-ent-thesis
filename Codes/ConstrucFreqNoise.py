@@ -43,9 +43,9 @@ def generate_data(f,
     if zero_noise is False:
         print(kmin, kmax)
         for i in range(kmin, kmax):
-            sys.stdout.write('\r%f perc o noise' %((i - kmin) / (kmax - kmin)))
+            sys.stdout.write('\r%f perc of noise' %((i - kmin) / (kmax - kmin)))
             
-            sigma = np.sqrt(psd_int(frequencies[i]) / df) * np.sqrt(.5) # why this? 
+            sigma = np.sqrt(psd_int(frequencies[i]) / df) * .5 
     
             frequency_series[i] = np.random.normal(0, sigma) + 1j * np.random.normal(0, sigma)
     # inverse FFT to return the TD strain
@@ -60,7 +60,7 @@ def residual(frequency, burg_spectrum):
 # if __name__ == '__main__': 
 #     np.random.seed(1) #Fissa l'inizializzazione alla catena pseudo-random
 #     dt = 1 / 1024     #if dt is too small (like 1 / 100), result is awful
-#     T = 3            #Max time of observation 
+#     T = 3             #Max time of observation 
 #     Ny = 1 / (2 * dt) #Compute Ny Frequency 
 #     f_max = Ny        #I choose my max frequency to be the Nyquist frequency! Smallest is 0
 #     N = T / dt        #Total number of points 

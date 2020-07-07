@@ -7,12 +7,14 @@ Created on Thu Jun 25 10:19:42 2020
 import numpy as np
 import sys
 
-def Fastburg(data, m, method = 'FPE', dr = 1):
+def Fastburg(data, m, method = 'FPE', dr = 1, Tik = 1.05):
     N = len(data)
+    print('haloa')
     #Define autocorrelation
     c = np.zeros(m + 2)
     for j in range(m + 1):
         c[j] = data[: N - j] @ data[j : ]
+    c[0] *= Tik
     #Initialize variables
     a = [np.array([1])]
     P = [c[0] / N]
@@ -45,6 +47,9 @@ def Fastburg(data, m, method = 'FPE', dr = 1):
         rs.append(r)
         #Compute optimizer value for chosen method
         optimizer[i] = optimizeM(P, a[-1], len(data), i + 1, method)
+    #Find minimum for the optimizers
+    index = optimizer[1:].argmin() + 2
+    
     return P, a, ks, gs, Drs, rs
     
 def updateCoefficients(a, g):

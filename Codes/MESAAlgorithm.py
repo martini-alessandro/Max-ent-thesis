@@ -46,7 +46,7 @@ class MESA(object):
 
     def spectrum(self, dt, frequency):
         N = self.a_k.shape[0]
-        den = sum([self.a_k[k] * np.exp(2 * np.pi * 1j * k * f * dt) for k in range(N)])
+        den = sum([self.a_k[k] * np.exp(2 * np.pi * 1j * k * frequency * dt) for k in range(N)])
         spec = dt * self.P / (np.abs(den) ** 2)
         return spec
 
@@ -119,7 +119,7 @@ class MESA(object):
     def _updateR(self, i, r, aCorr):
         rUp = np.array([2 * aCorr])
         rDown = r - self.data[: i + 1] * self.data[i + 1].conj() - \
-            data[self.N - i - 1 : ].conj()[::-1] * self.data[self.N - i - 2]
+            self.data[self.N - i - 1 : ].conj()[::-1] * self.data[self.N - i - 2]
         return np.concatenate((rUp, rDown))
         
     def _constructDr(self, i, a):

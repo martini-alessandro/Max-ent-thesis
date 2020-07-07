@@ -64,6 +64,7 @@ def optimizeM(P, a_k, N, m, method): #removed noise
     
 def burgMethod(data, m, method = 'FPE'):
     #initialization of variables
+    print('Standard!')
     P_0 = (data ** 2).mean() 
     P = [P_0]
     a_0 = 1 
@@ -86,17 +87,19 @@ def burgMethod(data, m, method = 'FPE'):
         _b = b + k * f 
         #print('P: ', P, '\nak: ', a_k[-1])
         optimizer[i] = optimizeM(P, a_k[-1], len(data), i + 1, method)
+        
     #selecting the minimum for the optimizer and recording its position 
-    # if method == 'CAT': 
-    #     optimizer[0] = optimizer[1] + 1
     if method == 'CAT' or method == 'FPE' or method == 'OBD':  
-        op_index = optimizer[1:].argmin() + 1 
+    #CAT optimizer[0] is 0, so we need the minimum value of optimizer[1]
+        op_index = optimizer[1:].argmin() 
+    #+ 1 because of slicing [1:], +1 because opt[i] correspond to P[i+1], ak[i+1]
+        op_index += 2
     elif isinstance(method, int):
         #raise error if method < M 
         op_index = method
     else: 
         raise ValueError('method selected is not allowable')
-    return P, a_k, k_list
+    return P, np.array(a_k), k_list
 
 
 

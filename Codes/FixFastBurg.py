@@ -10,36 +10,26 @@ import FastBurg2 as Fb2
 import numpy as np
 import matplotlib.pyplot as plt
 import os
+from MESAAlgorithm import MESA
 
 
 if __name__ == '__main__': 
     #Generate array of noise
-    dt = 1 / 1024
-    T = 8
+    dt = 1 / 2048
+    T = 12
     fmax = 1 / (2 * dt)
     f, ps = np.loadtxt('..{}LIGO-P1200087-v18-AdV_DESIGN_psd.dat'.format(os.sep), unpack = True)
     
     time, time_series, freq, freqSeries, psd = fr.generate_data(f, ps, T, 0,
                                                                 1 / dt, 10, 
                                                                 fmax)
-    N = len(time_series)
-    M = int(2*N / np.log(2*N))
-    
-    #Compute variables for burg Methods: fast with different dr and standard Burg
-    lenght = 10
-    p, ak, ks, gs, Drs, rs = Fb2.Fastburg(time_series, lenght, dr = 2)
-    p2, a2, ks2, gs2, Drs2, rs2 = Fb2.Fastburg(time_series, lenght, dr = 1)
-    bp, bak, bk = sa.burgMethod(time_series, lenght)
-    p, p2, bp = np.array(p), np.array(p2), np.array(bp)
-    
-    #Compare results for p 
-    ppFast = p / bp
-    ppOut = p2 / bp
-    one = np.ones(lenght)
-    
-    #plot the ratios and ratio = 1 line 
-    plt.plot(one, color = 'r', linestyle = '--')
-    plt.plot(ppFast, label = 'Fast')
-    plt.plot(ppOut, label = 'Outer')
-    plt.legend()
-
+    M = MESA(time_series)
+    P, ak = M.solve(method = "Fast", optimisation_method = "FPE")
+    print('fast :',P, len(ak))
+    plt.loglog(f, M.spectrum(dt,f))
+    P, ak = M.solve(method = "Standard", optimisation_method = "FPE")
+    print('slow :',P, len(ak))
+#    exit()
+    plt.loglog(f, M.spectrum(dt,f), '--')
+    plt.show()
+   
