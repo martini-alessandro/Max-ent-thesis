@@ -54,7 +54,7 @@ class MESA(object):
               m = None,
               optimisation_method = "FPE",
               method              = "Fast",
-              regularisation      = 0.0):
+              regularisation      = 1.0):
         
         self.regularisation = regularisation
         if m == None:
@@ -79,7 +79,7 @@ class MESA(object):
         c = np.zeros(self.mmax + 2)
         for j in range(self.mmax + 1):
             c[j] = self.data[: self.N - j] @ self.data[j : ]
-        c[0] += self.regularisation
+        c[0] *= self.regularisation
         #Initialize variables
         a = [np.array([1])]
         P = [c[0] / self.N]
@@ -90,7 +90,7 @@ class MESA(object):
         optimization = np.zeros(self.mmax)
         #Loop for the FastBurg Algorithm
         for i in range(self.mmax):
-            sys.stdout.write('\r%f Fast Burg: ' %(i / (self.mmax)))
+            sys.stdout.write('\r%2f Fast Burg ' %((i + 1) * 100/ (self.mmax)))
             #Update prediction error filter and reflection error coefficient
             k, new_a = self._updateCoefficients(a[-1], g)
             #Update variables. Check paper for indeces at j-th loop.
@@ -153,7 +153,7 @@ class MESA(object):
         optimization = np.zeros(self.mmax)
         #Burg's recursion
         for i in range(self.mmax):
-            sys.stdout.write('\r%f Normal Burg: ' %(i / (self.mmax - 1)))
+            sys.stdout.write('\r%f Normal Burg: ' %(100 * i / (self.mmax - 1)))
             f = _f[1:]
             b = _b[:-1]
             den = np.dot(f, f) + np.dot(b, b)

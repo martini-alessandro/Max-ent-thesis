@@ -25,37 +25,41 @@ def generate_data(f,
                   fmax = 100,
                   zero_noise = False,
                   asd = False):
-    
     # f, psd = np.loadtxt(psd_file, unpack=True)
     if asd is True : psd *= psd
     # generate an interpolant for the PSD
     psd_int = interp1d(f, psd, bounds_error=False, fill_value=np.inf)
     df      = 1 / T
     N       = int(sampling_rate * T)
-    times   = np.linspace(starttime, starttime + T , N) #should be start_time + T - dt
+    times   = np.linspace(starttime, starttime + T , N) 
     # filter out the bad bits
     kmin = np.int(fmin/df)
     kmax = np.int(fmax/df) + 1
     # generate the FD noise
-    frequencies      = df*np.arange(0, N / 2 + 1) #df * N / 2 is Ny frequency, + 1 needed because a_range cuts last term
+    print(N)
+    frequencies      = df * np.arange(0, N / 2 + 1) #df * N / 2 is Ny frequency, + 1 needed because arange cuts last term
     frequency_series = np.zeros(len(frequencies), dtype = np.complex128)
     # print('kmin: {}, kmax: {}, freqmax: {}'.format(kmin, kmax, frequencies[-1]))
     if zero_noise is False:
-        print(kmin, kmax)
-        for i in range(kmin, kmax):
-            sys.stdout.write('\r%f perc of noise' %((i - kmin) / (kmax - kmin)))
+        print(kmin, kmax, frequencies.size)
+        sigma = np.sqrt(psd_int(frequencies[kmin: kmax + 1]) / df)
+        phi = np.random.uniform(0, 2 * np.pi, len(sigma))
+        frequency_series = sigma * np.exp(1j * phi) #* np.random.normal(0, 1, size = len(sigma)) 
+        
+        
+        # for i in range(kmin, kmax):
+        #     sys.stdout.write('\r%f perc of noise' %((i - kmin - 1) / (kmax - kmin)))
             
-            sigma = np.sqrt(psd_int(frequencies[i]) / df) * .5 
+        #     sigma = np.sqrt(psd_int(frequencies[i]) / df) * .5
     
-            frequency_series[i] = np.random.normal(0, sigma) + 1j * np.random.normal(0, sigma)
+        #     frequency_series[i] = np.random.normal(0, sigma) + 1j * np.random.normal(0, sigma)
     # inverse FFT to return the TD strain
-    time_series = np.fft.irfft(frequency_series, n = N) * df * N 
+    time_series = np.fft.irfft(frequency_series) * df * (N + 1)
     return times, time_series, frequencies, frequency_series, psd_int(frequencies)
 
 def residual(frequency, burg_spectrum):
     r2 = (gaussSpectrum(frequency) - burg_spectrum) ** 2 #compute residuals squared
-    r2p = ((gaussSpectrum(frequency) - burg_spectrum) / gaussSpectrum(frequency)) ** 2
-    return r2.mean(), r2p.mean()
+    return r2.mean()
 
 # if __name__ == '__main__': 
 #     np.random.seed(1) #Fissa l'inizializzazione alla catena pseudo-random

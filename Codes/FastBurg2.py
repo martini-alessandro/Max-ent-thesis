@@ -50,7 +50,7 @@ def Fastburg(data, m, method = 'FPE', dr = 1, Tik = 1.05):
     #Find minimum for the optimizers
     index = optimizer[1:].argmin() + 2
     
-    return P, a, ks, gs, Drs, rs
+    return P, a
     
 def updateCoefficients(a, g):
     a = np.concatenate((a, np.zeros(1)))
