@@ -13,13 +13,18 @@ class optimizer:
             return self._CAT(args[0], args[2], args[3])
         elif self.method == 'OBD':
             return self._OBD(*args)
+        elif self.method =='AIC':
+            return self._AIC(args[0], args[2], args[3])
         elif self.method == 'Fixed':
             return self._Fixed(args[3])
         else:
-            raise ValueError("{} is not a an available method! Valid choices are 'FPE', 'CAT', 'OBD' and 'Fixed'".format(self.method))
+            raise ValueError("{} is not a an available method! Valid choices are 'FPE', 'AIC', 'CAT', 'OBD' and 'Fixed'".format(self.method))
     
     def _FPE(self, P, N, m):
         return P[-1] * (N + m + 1) / (N - m - 1)
+    
+    def _AIC(self, P, N, m):
+        return np.log(P[-1]) + (2 * m) / N
     
     def _CAT(self, P, N, m):
         if m == 0:
@@ -71,8 +76,8 @@ class MESA(object):
             exit(-1)
         
         self._optimizer = optimizer(optimisation_method)
-        self.P, self.a_k = self._method()
-        return self.P, self.a_k
+        self.P, self.a_k, self.optimization = self._method()
+        return self.P, self.a_k, self.optimization
         
     def _FastBurg(self):
         #Define autocorrelation
@@ -108,7 +113,7 @@ class MESA(object):
             idx = self.mmax
         else:
             idx = optimization.argmin()+1
-        return P[idx], a[idx]
+        return P[idx], a[idx], optimization
         
     def _updateCoefficients(self, a, g):
         a = np.concatenate((a, np.zeros(1)))
