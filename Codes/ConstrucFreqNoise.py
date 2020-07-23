@@ -28,7 +28,7 @@ def generate_data(f,
     # f, psd = np.loadtxt(psd_file, unpack=True)
     if asd is True : psd *= psd
     # generate an interpolant for the PSD
-    psd_int = interp1d(f, psd, bounds_error=False, fill_value=np.inf)
+    psd_int = interp1d(f, psd, bounds_error=False, fill_value= 'extrapolate')
     df      = 1 / T
     N       = int(sampling_rate * T)
     times   = np.linspace(starttime, starttime + T , N) 
@@ -41,18 +41,12 @@ def generate_data(f,
     frequency_series = np.zeros(len(frequencies), dtype = np.complex128)
     # print('kmin: {}, kmax: {}, freqmax: {}'.format(kmin, kmax, frequencies[-1]))
     if zero_noise is False:
-        print(kmin, kmax, frequencies.size)
-        sigma = np.sqrt(psd_int(frequencies[kmin: kmax + 1]) / df)
+        sigma = np.sqrt(psd_int(frequencies) / df)
         phi = np.random.uniform(0, 2 * np.pi, len(sigma))
-        frequency_series = sigma * np.exp(1j * phi) #* np.random.normal(0, 1, size = len(sigma)) 
+        frequency_series = sigma * np.exp(1j * phi) * np.random.normal(0, 1, size = len(sigma)) 
         
         
-        # for i in range(kmin, kmax):
-        #     sys.stdout.write('\r%f perc of noise' %((i - kmin - 1) / (kmax - kmin)))
-            
-        #     sigma = np.sqrt(psd_int(frequencies[i]) / df) * .5
-    
-        #     frequency_series[i] = np.random.normal(0, sigma) + 1j * np.random.normal(0, sigma)
+      
     # inverse FFT to return the TD strain
     time_series = np.fft.irfft(frequency_series) * df * (N + 1)
     return times, time_series, frequencies, frequency_series, psd_int(frequencies)
