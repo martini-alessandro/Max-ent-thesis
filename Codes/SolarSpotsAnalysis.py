@@ -33,6 +33,8 @@ def autocorrelation(x, norm = 'N'):
         return R
     else:
         raise ValueError('this normalization is not available')
+
+
     
 def updatePredictionCoefficient(x, reflectionCoefficient):
     new_x = np.concatenate((x, np.zeros(1)))
@@ -108,12 +110,14 @@ def spectrum(P, a_k, f, dt = 1, plot = True):
     N = a_k.shape[0]
     den = sum([a_k[k] * np.exp(2 * np.pi * 1j * k * f * dt) for k in range(N)])
     spec = dt * P / (np.abs(den) ** 2)
-    df = pd.DataFrame({'f': f, 'spectrum': spec}, index = None)
-    if plot == True: 
-        plt.plot(f, spec)
-        # plt.xlabel('frequency {}'.format('1/months'))
-        # plt.ylabel('spectrum')
-    return df
+    return den
+
+def spectrum2(P, ak, f, dt = 1):
+    N = ak.shape[0]
+    k = np.linspace(0, N - 1, N)
+    den = ak @ np.exp(2 * np.pi * 1j * dt * np.outer(k, f))
+    return den
+
 
 
 # if __name__ == '__main__': 

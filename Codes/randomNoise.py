@@ -18,7 +18,7 @@ from scipy.interpolate import interp1d
 def psd(f):
     N = len(f)
     #return np.concatenate((np.repeat(5e20, N // 2),np.repeat(3, N // 2)))
-    return scipy.stats.norm.pdf(f, 3, .5) 
+    return scipy.stats.norm.pdf(f, 0, 2) 
 
 def generate_noise(f, psd, dt, t_min = 0, f_min = None, N = 10000):
     
@@ -32,15 +32,33 @@ def generate_noise(f, psd, dt, t_min = 0, f_min = None, N = 10000):
     Ny = 1 / (2 * dt)   #Nyquist frequency
     T =  N * dt         #Total time
     df = 1 / T          #Frequency interval
-    time = np.linspace(t_min, t_min + T, 2 * (N -1)) 
-    frequencies = np.linspace(f_min, Ny, N)
+    time = np.linspace(t_min, t_min + T, N) 
+    
+    frequencies      = df * np.arange(0,N/2.+1)
+
+    frequency_series = np.zeros(len(frequencies), dtype = np.complex128)
+
+    for i in range(kmin, kmax):
+
+        sigma               = np.sqrt(psd_int(frequencies[i])/df)
+
+        n                   = np.random.normal(0.0,sigma)
+
+        p                   = np.random.uniform(0,2*np.pi)
+
+        frequency_series[i] = n*np.exp(1j*p)
+
+    # anti Fourier transform to get the time domain simulated noise
+
+    time_series = np.fft.irfft(frequency_series, n=N)*df*N
+    frequencies = np.linspace(f_min, Ny, N // 2)
 
    
     #Generate Frequency-Domain noise
-    FDnoise = np.sqrt(interpPSD(frequencies) * df / 2) * np.exp(1j * np.random.uniform(0, 2 * np.pi, N)) * np.random.normal(size = N) #Multiplication for random gaussian is needed to have limit of psd as variance, not as upper - lower limit
+    FDnoise =  np.sqrt(interpPSD(frequencies) * df) * np.exp(1j * np.random.uniform(0, 2 * np.pi, N // 2)) #* np.random.normal(size = N // 2) #Multiplication for random gaussian is needed to have limit of psd as variance, not as upper - lower limit
     
     #convert noise in time domain 
-    TDnoise = np.fft.irfft(FDnoise) * 2 * (N -1) #2(N-1) is the number of point of FFT
+    TDnoise = np.fft.irfft(FDnoise) * N #2(N-1) is the number of point of FFT
     return time, TDnoise, frequencies, FDnoise, interpPSD(frequencies)
 
 def generate_noise_roughly(f, psd):
@@ -53,20 +71,25 @@ def generate_noise_roughly(f, psd):
     
     #Generate Noise
     FDnoise = np.sqrt(psd * df / 2) * np.exp(1j * np.random.uniform(0, 2 * np.pi, N)) \
-    #* np.random.normal(0, 1, N)
+    * np.random.normal(0, 1, N)
     TDnoise = np.fft.irfft(FDnoise) * (2 * N)  
     return FDnoise, TDnoise
 
 if __name__ == '__main__':
-    # f = np.linspace(0, 6, n)
-    # ps = psd(f) 
+    #f = np.linspace(0, 6, 10000)
+    #ps = psd(f) 
     f, ps = np.loadtxt('..{}LIGO-P1200087-v18-AdV_DESIGN_psd.dat'.format(os.sep), unpack = True)
-    dt = 1 / (2 * f[-1])
-    time, noise, freq, fnoise, PSD = generate_noise(f, ps, dt, N = f.size)
+    #dt = 1 / (2 * f[-1])
+    dt = 1 / 1024
+    N = int(32 / dt)
+    N = 100
+    time, noise, freq, fnoise, PSD = generate_noise(f, ps, dt = dt, N = N)
     #fNoise, noise = generate_noise_roughly(f, ps)
+    # plt.loglog(f, ps)
+    # plt.loglog(freq, PSD)
     
     M = MESA(noise)
     P, ak = M.solve(optimisation_method = 'FPE', method = 'Fast')
-    f1 = np.linspace(0, f[-1], len(f))
-    plt.loglog(f, M.spectrum(dt, f1))
+    f1 = np.linspace(10, f[-1], len(f))
+    plt.loglog(freq, M.spectrum(dt, freq))
     plt.loglog(f, ps, color = 'r', linestyle = '--')

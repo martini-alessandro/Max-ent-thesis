@@ -48,9 +48,10 @@ def Fastburg(data, m, method = 'FPE', dr = 1, Tik = 1.05):
         #Compute optimizer value for chosen method
         optimizer[i] = optimizeM(P, a[-1], len(data), i + 1, method)
     #Find minimum for the optimizers
+        if optimizer[i] > 
     index = optimizer[1:].argmin() + 2
     
-    return P, a
+    return P[-1], a[-1]
     
 def updateCoefficients(a, g):
     a = np.concatenate((a, np.zeros(1)))

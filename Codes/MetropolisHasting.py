@@ -8,6 +8,7 @@ This class is meant to implement a Markov Chain Monte Carlo algorithm, to
 explore the posterior space parameter and infere posterior distribution shape.
 """
 import numpy as np 
+import MESAAlgorithm
 import sys
 
 class Data(object): 
@@ -15,6 +16,13 @@ class Data(object):
         self.x = x 
         self.y = y 
         self.e = e
+        
+    def generateData(self, model, *parameters):
+        m = Model(self, model)
+        return m(*parameters)
+    
+    def residuals(self, model, *parameters):
+        return self.x - self.generateData(model, *parameters)
 
 class Prior(object):
         
@@ -42,6 +50,7 @@ class Prior(object):
                 #Returns value for Jeffreys prior
                 if log: return np.log(1 / value)
                 else: return 1 / value
+            
                 
         #Compute prior if value is not in parameter's domain
         else: 
@@ -100,7 +109,7 @@ class Model(object):
         For information about order for the parameters check the documentation for 
         every available model. Model is not case sensitive"""
         #Initialize variables
-        availModels = ["exponential", "powerlaw", "line", "cauchy"]
+        availModels = ["exponential", "powerlaw", "line", "cauchy", "sin"]
         self.data = data
         
         #Models should be in models
@@ -141,6 +150,8 @@ class Model(object):
         """Return the image for cauchy - distributed datas height parameters
         is to be interpreted as height / scale """
         return height  / (1 + ((self.data.x - mode) / scale)) ** 2 + floor
+    def sin(self, amplitude, frequency, phase):
+        return amplitude * np.sin(frequency * self.data.x + phase)
 
 
 class Likelihood(object): 
@@ -158,7 +169,7 @@ class Likelihood(object):
          if log in [True, False]: 
              self.log = log
          else:
-             raise ValueError('log can only be True o False')
+             raise ValueError('Log can only be True o False')
          
          #Distribution should be of correct Type
          if distribution.lower() in availDistributions:
@@ -236,7 +247,7 @@ class Posterior(object):
         parameter. Compute current value if parameter Values is set to 'current'
         or 0, or proposed values if set to 'proposal'
         """
-        #Create a tuple containing only value for parameters
+        #Create a tuple containing values for the parameters as float objects
         par = []
         for p in parameters:
             if type(p) == Parameter:
@@ -258,8 +269,7 @@ class Metropolis(object):
     
     def solve(self): 
         for _ in range(self.N): 
-            acc = 0
-            sys.stdout.write('\r%f' % acc)
+            sys.stdout.write('\r acceptance percentage %f' % ((_ + 1) / self.N))
             #Updata parameters value to compute they proposal value
             self._updateParameters()
             
@@ -268,12 +278,10 @@ class Metropolis(object):
                 self.posterior.value(*self.parameters)
             
             #accept values if condition met
-            if r > np.log(np.random.uniform(0, 1)):
-                print('Here!')
+            if r > np.log(np.random.uniform(0, 1)): 
+        
                 self._acceptNewValues()
-            else:
-                print('Oh no!')
-            
+    
             #update samples array
             self._updateSamples()
         
@@ -300,5 +308,7 @@ class Metropolis(object):
             else: newSamples.append(p)
         self.samples.append(newSamples)
         return None
+    
+
         
         

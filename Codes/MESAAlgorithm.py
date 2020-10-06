@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import matplotlib.pyplot as plt
 
 class optimizer:
 
@@ -112,7 +113,7 @@ class MESA(object):
         if self._optimizer.method == "Fixed":
             idx = self.mmax
         else:
-            idx = optimization.argmin()+1
+            idx = optimization.argmin() + 1
         return P[idx], a[idx], optimization
         
     def _updateCoefficients(self, a, g):
@@ -174,7 +175,7 @@ class MESA(object):
             idx = self.mmax
         else:
             idx = optimization.argmin()+1
-        return P[idx], a_k[idx]
+        return P[idx], a_k[idx], optimization
     
     def _updatePredictionCoefficient(self, x, reflectionCoefficient):
         new_x = np.concatenate((x, np.zeros(1)))
@@ -196,3 +197,16 @@ if __name__ == "__main__":
 #    exit()
     plt.loglog(f, M.spectrum(dt,f), '--')
     plt.show()
+
+def autocorrelation(x, norm = 'N'):
+    N = len(x)
+    X=np.fft.fft(x-x.mean())
+    # We take the real part just to convert the complex output of fft to a real numpy float. The imaginary part if already 0 when coming out of the fft.
+    R = np.real(np.fft.ifft(X*X.conj()))
+    # Divide by an additional factor of 1/N since we are taking two fft and one ifft without unitary normalization, see: https://docs.scipy.org/doc/numpy/reference/routines.fft.html#module-numpy.fft
+    if norm == 'N':
+        return R/N
+    elif norm == None: 
+        return R
+    else:
+        raise ValueError('this normalization is not available')
