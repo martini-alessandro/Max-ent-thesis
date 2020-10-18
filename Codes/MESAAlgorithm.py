@@ -52,10 +52,17 @@ class MESA(object):
 
     def spectrum(self, dt, frequency):
         N = self.a_k.shape[0]
+        # den = sum([self.a_k[k] * np.exp(2 * np.pi * 1j * k * frequency * dt) for k in range(N)])
+        den = np.array([self.a_k[k] * np.exp(2 * np.pi * 1j * k * frequency * dt) for k in range(N)])    
+        spec = dt * self.P / (np.abs(den.sum(axis = 0)) ** 2)
+        return spec
+    
+    def oldSpectrum(self, dt, frequency):
+        N = self.a_k.shape[0]
         den = sum([self.a_k[k] * np.exp(2 * np.pi * 1j * k * frequency * dt) for k in range(N)])
         spec = dt * self.P / (np.abs(den) ** 2)
         return spec
-
+            
     def solve(self,
               m = None,
               optimisation_method = "FPE",
@@ -179,7 +186,7 @@ class MESA(object):
     
     def _updatePredictionCoefficient(self, x, reflectionCoefficient):
         new_x = np.concatenate((x, np.zeros(1)))
-        return new_x + reflectionCoefficient*new_x[::-1]
+        return new_x + reflectionCoefficient * new_x[::-1]
     
 if __name__ == "__main__":
     import matplotlib.pyplot as plt

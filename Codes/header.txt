@@ -1,1 +1,1 @@
-1	2	3	4	5	logL
+Amplitude1	Amplitude2	Frequency	logL

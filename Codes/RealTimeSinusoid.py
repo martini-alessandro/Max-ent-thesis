@@ -10,6 +10,7 @@ import cpnest.model
 from scipy import stats
 from MESAAlgorithm import MESA
 import os
+from scipy.signal import welch, tukey
 
 class Data(object):
     
@@ -45,8 +46,8 @@ class SinusoidModel(cpnest.model.Model):
         #Compute Likelihood 
         
         Fresiduals =  np.fft.rfft(residuals)
-        exp = (np.abs(Fresiduals) ** 2)
-        logL = - (exp / k  + k * np.log(psd))
+        exponent = (np.abs(Fresiduals) ** 2)
+        logL = - (exponent / k  + k * np.log(psd))
         logL = logL.sum() - logL[0]
         return logL
         
@@ -135,9 +136,9 @@ if __name__== '__main__':
     # amplitude, frequency, phase = 23.6, 7.3, 5.4
     amplitude1, amplitude2, frequency= 8, 14, 7.3
     #Generate Data 
-    NumberOfData = 400
+    NumberOfData = 300
     dt = 1 / (2 * frequency)
-    x = np.arange(0, NumberOfData ) * dt
+    x = np.arange(0, NumberOfData) * dt
     T = NumberOfData  * dt
     error = np.random.normal(0, .3 * amplitude1, NumberOfData)
     # y = amplitude * np.sin(frequency * x + phase)
@@ -156,14 +157,14 @@ if __name__== '__main__':
                             poolsize     = 32,
                             nthreads     = 2,
                             nlive        = 1024,
-                            maxmcmc      = 1000,
+                            maxmcmc      = 500,
                             output       = os.getcwd())
 
     work.run()
     print('log Evidence {0}'.format(work.NS.logZ))
     x = work.posterior_samples.ravel()
+    np.savetxt('RealDatas.txt', y)
     np.savetxt('PosteriorSamples.txt', x)
-    np.savetxt('Spectra', c.spectra)
 
 
  
