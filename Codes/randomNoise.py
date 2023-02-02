@@ -59,9 +59,7 @@ def generate_noise(f, psd, dt, t_min = 0, f_min = None, N = 10000):
     
     #convert noise in time domain 
     TDnoise = np.fft.irfft(FDnoise) * N #2(N-1) is the number of point of FFT
-    return time, TDnoise, frequencies, FDnoise, interpPSD(frequencies)
-
-def generate_noise_roughly(f, psd):
+    return time, TDnoise, frequencies, FDnoise, interpPSD(frequencies)def generate_noise_roughly(f, psd):
     #Define variables
     N = len(psd)
     Ny = f[-1]
@@ -75,21 +73,3 @@ def generate_noise_roughly(f, psd):
     TDnoise = np.fft.irfft(FDnoise) * (2 * N)  
     return FDnoise, TDnoise
 
-if __name__ == '__main__':
-    #f = np.linspace(0, 6, 10000)
-    #ps = psd(f) 
-    f, ps = np.loadtxt('..{}LIGO-P1200087-v18-AdV_DESIGN_psd.dat'.format(os.sep), unpack = True)
-    #dt = 1 / (2 * f[-1])
-    dt = 1 / 1024
-    N = int(32 / dt)
-    N = 100
-    time, noise, freq, fnoise, PSD = generate_noise(f, ps, dt = dt, N = N)
-    #fNoise, noise = generate_noise_roughly(f, ps)
-    # plt.loglog(f, ps)
-    # plt.loglog(freq, PSD)
-    
-    M = MESA(noise)
-    P, ak = M.solve(optimisation_method = 'FPE', method = 'Fast')
-    f1 = np.linspace(10, f[-1], len(f))
-    plt.loglog(freq, M.spectrum(dt, freq))
-    plt.loglog(f, ps, color = 'r', linestyle = '--')
